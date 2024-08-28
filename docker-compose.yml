@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16.4
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  redis:
+    image: redis:latest
+    networks:
+      - backend
+
+  web:
+    build: .
+    command: gunicorn keydevs.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - .:/app
+      - ./static:/app/static
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DJANGO_SETTINGS_MODULE=keydevs.settings
+      - DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      - REDIS_URL=redis://redis:6379/1
+      - ALLOWED_HOSTS=*
+    networks:
+      - backend
+
+  celery:
+    build: .
+    command: celery -A keydevs worker --loglevel=info
+    depends_on:
+      - web
+      - redis
+    networks:
+      - backend
+
+  celery-beat:
+    build: .
+    command: celery -A keydevs beat --loglevel=info
+    depends_on:
+      - web
+      - redis
+    networks:
+      - backend
+
+volumes:
+  postgres_data:
+
+networks:
+  backend:
+    driver: bridge
