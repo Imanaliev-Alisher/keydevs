@@ -2,6 +2,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
+import dj_database_url
 
 load_dotenv()
 
@@ -72,16 +73,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'keydevs.wsgi.application'
 
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv("DB_NAME"),
-        'USERNAME': os.getenv("DB_USER"),
-        'PASSWORD': os.getenv("DB_PASSWORD"),
-        'HOST': 'db',
-        'PORT': 5432,
-    }
-}
+DATABASES = {'default': dj_database_url.config(default=os.getenv("DATABASE_URL"), conn_max_age=600)}
 
 
 AUTH_USER_MODEL = 'users.User'

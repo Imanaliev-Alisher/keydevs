@@ -11,6 +11,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - backend
+    ports:
+      - "5431:5432"
+    env_file:
+      - .env
+
 
   redis:
     image: redis:latest
@@ -19,7 +24,9 @@ services:
 
   web:
     build: .
-    command: gunicorn keydevs.wsgi:application --bind 0.0.0.0:8000
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn keydevs.wsgi:application --bind 0.0.0.0:8000"
     volumes:
       - .:/app
       - ./static:/app/static
@@ -35,6 +42,8 @@ services:
       - ALLOWED_HOSTS=*
     networks:
       - backend
+    env_file:
+      - .env
 
   celery:
     build: .
@@ -44,6 +53,8 @@ services:
       - redis
     networks:
       - backend
+    env_file:
+      - .env
 
   celery-beat:
     build: .
@@ -53,6 +64,8 @@ services:
       - redis
     networks:
       - backend
+    env_file:
+      - .env
 
 volumes:
   postgres_data:
